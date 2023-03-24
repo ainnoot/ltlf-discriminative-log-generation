@@ -1,10 +1,13 @@
+import sys
 from collections import defaultdict
+from copy import copy
+from typing import List
 
-from ltlf2dfa.base import MonaProgram
+from ltlf2dfa.base import MonaProgram, Formula
 from ltlf2dfa.ltlf2dfa import compute_declare_assumption, to_dfa, ter2symb
 from logaut.backends.common.process_mona_output import parse_mona_output, MONAOutput
 
-from ltlf2dfa.parser.ltlf import LTLfParser
+from ltlf2dfa.parser.ltlf import LTLfParser, LTLfNot
 from sympy import symbols
 from automata.fa.dfa import DFA
 from random import Random, choice
@@ -95,26 +98,54 @@ def mona_to_automatalib(mona: MONAOutput):
     )
 
 
+def partition_formulae(formulae: List[str]):
+    partitioning_formulae = []
+
+    for idx, f in enumerate(formulae):
+        to_neg = [_f for _f in formulae if f != _f]
+        partitioning_formulae.append(f"{f} & ~({' & '.join(tn for tn in to_neg)})")
+
+    return partitioning_formulae
+
+
+def ltlf_to_dfa(ltlf):
+    mona_dfa = parse_mona_output(to_dfa(ltlf, mona_dfa_out=True))
+    dfa = mona_to_automatalib(mona_dfa)
+    return dfa
+
+
+def generate_partition(dfa, n, length, activities):
+    involved_variables = set(dfa.input_symbols)
+    available_fillers = list(activities.difference(involved_variables))
+
+    if len(available_fillers) == 0:
+        raise RuntimeError("Impossible to replace __placeholder__ with an activity, all activities are involved in the formula!")
+
+    words = []
+    for _ in range(n):
+        random_dfa_word = dfa.random_word(length)
+        random_dfa_word = map(lambda x: x if x != '__placeholder__' else choice(available_fillers), random_dfa_word)
+        words.append(tuple(random_dfa_word))
+
+    return words
+
+
 if __name__ == '__main__':
+    parser = LTLfParser()
+
+    pformulae = [parser(x) for x in partition_formulae(sys.argv[1:])]
+
     # Adding Declare assumption to MonaProgram by default
     patch_ltlf2dfa()
 
     # Do not join state names when returning random word
     patch_automatalib()
 
-    formula = LTLfParser()("G(a -> X(b)) && G(c -> F(d))")
-    mona_dfa = parse_mona_output(to_dfa(formula, mona_dfa_out=True))
+    dfas = [ltlf_to_dfa(formula) for formula in pformulae]
 
-    dfa = mona_to_automatalib(mona_dfa)
+    for idx, dfa in enumerate(dfas):
+        print("Random words for formula", pformulae[idx])
+        random_words = generate_partition(dfa, 10, 15, {"A", "B", "C", "D", "E", "F", "G"})
 
-    involved_variables = set(dfa.input_symbols)
-    activities = {"A", "B", "C", "D", "__placeholder__", "Q", "X", "T"}
-    available_fillers = list(activities.difference(involved_variables))
-
-    if len(available_fillers) == 0:
-        raise RuntimeError("Impossible to replace __placeholder__ with an activity, all activities are involved in the formula!")
-
-    for _ in range(10):
-        random_dfa_word = dfa.random_word(8)
-        random_dfa_word = map(lambda x: x if x != '__placeholder__' else choice(available_fillers), random_dfa_word)
-        print(list(random_dfa_word))
+        for w in random_words:
+            print(w)
