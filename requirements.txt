@@ -2,3 +2,4 @@ ltlf2dfa
 parse
 logaut
 pythomata
+automata-lib
