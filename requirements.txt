@@ -1,0 +1,4 @@
+ltlf2dfa
+parse
+logaut
+pythomata
