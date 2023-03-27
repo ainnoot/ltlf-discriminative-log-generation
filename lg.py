@@ -1,30 +1,30 @@
 import sys
+
+import yaml
 from ltlf2dfa.parser.ltlf import LTLfParser
-from discriminative_log_generator.ltlf import partition_formulae, ltlf_to_dfa, generate_partition
+from discriminative_log_generator.ltlf import partition_formulae, ltlf_to_dfa, generate_random_trace
 from argparse import ArgumentParser
+from discriminative_log_generator.conf import LogGeneratorSettings
 
 if __name__ == '__main__':
     p = ArgumentParser()
-    p.add_argument("-f", "--formulae", nargs='+', help="LTLf formulae that will induce the log partitions.", required=True)
-    p.add_argument("-l", "--length", type=int, help="Length of the traces to generate.", required=True)
-    p.add_argument("-n", "--num-traces", type=int, help="How many traces will be generated (per partition).", required=True)
+    p.add_argument("settings", type=str)
     args = p.parse_args()
 
-    if args.formulae is None or len(args.formulae) < 2:
-        print(f"You must provide at least two LTLf formulae! You provided: {args.formulae}")
-        sys.exit(1)
+    with open(args.settings, 'r') as f:
+        generator_settings: LogGeneratorSettings = LogGeneratorSettings.from_yaml(yaml.safe_load(f))
 
-    parser = LTLfParser()
+    partitioning_formulae = partition_formulae([ps.model.formula for ps in generator_settings.partition_settings])
 
-    pformulae = [parser(x) for x in partition_formulae(args.formulae)]
+    dfas = [ltlf_to_dfa(formula) for formula in partitioning_formulae]
 
-    print("Generating traces according to the following LTLf formulae:", pformulae)
+    for partition, formula in zip(generator_settings.partition_settings, partitioning_formulae):
+        dfa = ltlf_to_dfa(formula)
+        print(f"Generating traces for Partition {partition.name}")
 
-    dfas = [ltlf_to_dfa(formula) for formula in pformulae]
+        for idx in range(partition.num_traces):
+            random_trace = generate_random_trace(dfa, int(partition.length_distribution.get_value()), generator_settings.activities)
+            random_trace = tuple(x.lower() for x in random_trace)
+            print(random_trace)
 
-    for idx, dfa in enumerate(dfas):
-        print("Random traces for formula", pformulae[idx])
-        random_words = generate_partition(dfa, args.num_traces, args.length, {"A", "B", "C", "D", "E", "F", "G"})
-
-        for w in random_words:
-            print(w)
+        print("\n\n\n\n")
