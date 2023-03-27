@@ -5,3 +5,4 @@ pythomata
 automata-lib
 numpy
 pyyaml
+pm4py

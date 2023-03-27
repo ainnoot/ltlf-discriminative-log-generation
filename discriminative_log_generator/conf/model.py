@@ -105,7 +105,6 @@ class PartitionSettings:
 class LogGeneratorSettings:
     activity_set: Set[Activity]
     partition_settings: List[PartitionSettings]
-    output_path: Path
 
     @property
     def activities(self):
@@ -129,7 +128,7 @@ class LogGeneratorSettings:
 
         partitions = [PartitionSettings.from_dict(p) for p in block['partitions']]
 
-        return LogGeneratorSettings(set(activity_set), partitions, Path(block['output_file']))
+        return LogGeneratorSettings(set(activity_set), partitions)
 
 
 if __name__ == '__main__':
