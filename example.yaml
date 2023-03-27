@@ -1,0 +1,27 @@
+activities: [a, b, c, d, e]
+
+partitions:
+  - name: "Partition 1"
+    model:
+      - "F(a) -> F(b)"
+      - "a -> ! F(b)"
+    length:
+      generator: normal
+      params:
+        loc: 5.0
+        scale: 2.0
+
+  - name: "Partition 2"
+    model:
+      - "F(a) -> F(b)"
+      - "a -> ! F(b)"
+    length:
+      generator: normal
+      params:
+        loc: 0.0
+        scale: 1.0
+
+export:
+  format:
+  path:
+  filename:
