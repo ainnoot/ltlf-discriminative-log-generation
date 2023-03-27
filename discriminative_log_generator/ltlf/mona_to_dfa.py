@@ -5,11 +5,10 @@ from typing import List
 import traceback
 
 from ltlf2dfa.base import MonaProgram, Formula
-from ltlf2dfa.ltlf2dfa import compute_declare_assumption, to_dfa, ter2symb
+from ltlf2dfa.ltlf2dfa import compute_declare_assumption, to_dfa
 from logaut.backends.common.process_mona_output import parse_mona_output, MONAOutput
 
-from ltlf2dfa.parser.ltlf import LTLfParser, LTLfNot
-from sympy import symbols
+from ltlf2dfa.parser.ltlf import LTLfNot, LTLfAnd, LTLfTrue
 from automata.fa.dfa import DFA
 from random import Random, choice
 
@@ -81,6 +80,7 @@ def patch_automatalib():
 
     return True
 
+
 def mona_to_automatalib(mona: MONAOutput):
     def decode_guard(guard):
         if 'X' in guard:
@@ -92,7 +92,15 @@ def mona_to_automatalib(mona: MONAOutput):
         return guard.find('1')
 
     def find_initial_state():
-        return 1
+        def is_null(x):
+            return x == 'X' * len(mona.variable_names)
+
+        mona_initial_state = mona.initial_state
+        for dst, outgoing_edges in mona.transitions[mona_initial_state].items():
+            if len(outgoing_edges) == 1 and is_null(list(outgoing_edges)[0]):
+                return dst
+
+        raise Exception("Something strange going on in MONA, check:", mona)
 
     transitions = defaultdict(lambda: dict(), dict())
     free_variables = mona.variable_names
@@ -113,13 +121,15 @@ def mona_to_automatalib(mona: MONAOutput):
     )
 
 
-def partition_formulae(formulae: List[str]):
+def partition_formulae(formulae: List[Formula]):
     partitioning_formulae = []
 
     for i in range(len(formulae)):
         pos = formulae[i]
         neg = formulae[:i] + formulae[i+1:]
-        partitioning_formulae.append(f"{pos} & ~({' & '.join(n for n in neg)})")
+        if len(neg) < 2:
+            neg.append(LTLfTrue())
+        partitioning_formulae.append(LTLfAnd([pos, LTLfNot(LTLfAnd(neg))]))
 
     return partitioning_formulae
 
@@ -130,19 +140,16 @@ def ltlf_to_dfa(ltlf):
     return dfa
 
 
-def generate_partition(dfa, n, length, activities):
-    involved_variables = set(dfa.input_symbols)
-    available_fillers = list(activities.difference(involved_variables))
+def generate_random_trace(dfa, length, available_activities):
+    involved_variables = set(a.lower() for a in dfa.input_symbols)
+    fillers = list(a.lower() for a in available_activities.difference(involved_variables))
 
-    if len(available_fillers) == 0:
+    if len(fillers) == 0:
         raise RuntimeError("Impossible to replace __placeholder__ with an activity, all activities are involved in the formula!")
 
-    words = []
-    for _ in range(n):
-        random_dfa_word = dfa.random_word(length)
-        random_dfa_word = map(lambda x: x if x != '__placeholder__' else choice(available_fillers), random_dfa_word)
-        words.append(tuple(random_dfa_word))
+    random_dfa_word = dfa.random_word(length)
+    random_dfa_word = map(lambda x: x if x != '__placeholder__' else choice(fillers), random_dfa_word)
+    return tuple(random_dfa_word)
 
-    return words
 
 

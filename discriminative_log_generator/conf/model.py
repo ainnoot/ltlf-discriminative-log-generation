@@ -4,6 +4,8 @@ from typing import List, Dict, Union, Tuple, Set, Callable
 import numpy.random
 import parse
 
+from discriminative_log_generator.conf import declare
+
 import yaml
 from ltlf2dfa.base import Formula
 from ltlf2dfa.parser.ltlf import LTLfParser, LTLfAnd, LTLfTrue
@@ -43,13 +45,9 @@ class LengthDistribution:
         return LengthDistribution(lambda: generator_f(**params))
 
 
+
 @dataclass(frozen=True)
 class Model:
-    pass
-
-
-@dataclass(frozen=True)
-class LTLfModel(Model):
     formula: Formula
 
     @staticmethod
@@ -57,36 +55,59 @@ class LTLfModel(Model):
         p = LTLfParser()
 
         formulae = []
-        for f in data:
+        for f in data['ltlf']:
+            print("Parsed LTLf formula:", f)
             try:
                 formulae.append(p(f))
             except Exception as e:
                 raise Exception(f"Invalid formula: {f}")
 
-        return LTLfModel(LTLfAnd(formulae))
+        for f in data['declare']:
+            print("Parsed Declare constraint:", f)
+            try:
+                mask = "{template}({activities})"
+                params = parse.parse(mask, f).named
+
+                available_declare_templates = dir(declare)
+                if params['template'] not in available_declare_templates:
+                    raise Exception(f"Unkown Declare constraint: {f}")
+
+                formulae.append(getattr(declare, params['template'])(*(params['activities'].split(','))))
+            except Exception as e:
+                raise Exception("Something wrong with Declare constraint", f)
+
+        if len(formulae) < 2:
+            formulae.append(LTLfTrue())
+
+        return Model(LTLfAnd(formulae))
 
 
 @dataclass(frozen=True)
 class PartitionSettings:
     name: str
-    model: LTLfModel
+    model: Model
     length_distribution: LengthDistribution
+    num_traces: int
 
     @staticmethod
     def from_dict(data):
         name = data['name']
 
-        model = LTLfModel.from_dict(data['model'])
+        model = Model.from_dict(data['model'])
 
-        length_distribution = LengthDistribution.from_dict(data['length'])
+        length_distribution = LengthDistribution.from_dict(data['settings'])
 
-        return PartitionSettings(name, model, length_distribution)
+        return PartitionSettings(name, model, length_distribution, data['num_traces'])
 
 
 @dataclass(frozen=True)
 class LogGeneratorSettings:
     activity_set: Set[Activity]
     partition_settings: List[PartitionSettings]
+
+    @property
+    def activities(self):
+        return set([a.value for a in self.activity_set])
 
     @staticmethod
     def from_yaml(block):
