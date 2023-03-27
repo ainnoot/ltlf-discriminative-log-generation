@@ -8,7 +8,7 @@ from ltlf2dfa.base import MonaProgram, Formula
 from ltlf2dfa.ltlf2dfa import compute_declare_assumption, to_dfa
 from logaut.backends.common.process_mona_output import parse_mona_output, MONAOutput
 
-from ltlf2dfa.parser.ltlf import LTLfNot, LTLfAnd, LTLfTrue
+from ltlf2dfa.parser.ltlf import LTLfNot, LTLfAnd, LTLfTrue, LTLfOr, LTLfImplies
 from automata.fa.dfa import DFA
 from random import Random, choice
 
@@ -138,6 +138,23 @@ def ltlf_to_dfa(ltlf):
     mona_dfa = parse_mona_output(to_dfa(ltlf, mona_dfa_out=True))
     dfa = mona_to_automatalib(mona_dfa)
     return dfa
+
+
+def xor_formula(formulae):
+    """
+    DFA that accepts models of exactly one formula.
+    """
+    from itertools import combinations
+    or_of_all = LTLfOr(formulae)
+    implications = [LTLfImplies([a, LTLfNot(b)]) for a, b in combinations(formulae, 2)]
+    return LTLfAnd([or_of_all, *implications])
+
+
+def accept_one_reject_all_others(to_accept, to_reject):
+    """
+    DFA that accepts models of `to_accept` and is rejected by all formulae in `to_reject`
+    """
+    return LTLfAnd([to_accept] + [LTLfNot(x) for x in to_reject])
 
 
 def generate_random_trace(dfa, length, available_activities):
