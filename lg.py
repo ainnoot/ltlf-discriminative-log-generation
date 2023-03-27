@@ -36,4 +36,3 @@ if __name__ == '__main__':
         event_log = pandas.concat([event_log, trace_to_dataframe(trace, case_id)])
 
     pm4py.write_xes(event_log, args.output_file)
-
