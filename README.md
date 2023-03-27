@@ -1,7 +1,7 @@
 ## Usage
 
 ```commandline
-usage: lg.py [-h] [-f FORMULAE [FORMULAE ...]] [-l LENGTH] [-n NUM_TRACES]
+usage: lg.py [-h] -f FORMULAE [FORMULAE ...] -l LENGTH -n NUM_TRACES
 
 options:
   -h, --help            show this help message and exit

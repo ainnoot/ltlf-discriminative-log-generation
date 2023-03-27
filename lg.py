@@ -5,10 +5,14 @@ from argparse import ArgumentParser
 
 if __name__ == '__main__':
     p = ArgumentParser()
-    p.add_argument("-f", "--formulae", nargs='+', help="LTLf formulae that will induce the log partitions.")
-    p.add_argument("-l", "--length", type=int, help="Length of the traces to generate.")
-    p.add_argument("-n", "--num-traces", type=int, help="How many traces will be generated (per partition).")
+    p.add_argument("-f", "--formulae", nargs='+', help="LTLf formulae that will induce the log partitions.", required=True)
+    p.add_argument("-l", "--length", type=int, help="Length of the traces to generate.", required=True)
+    p.add_argument("-n", "--num-traces", type=int, help="How many traces will be generated (per partition).", required=True)
     args = p.parse_args()
+
+    if args.formulae is None or len(args.formulae) < 2:
+        print(f"You must provide at least two LTLf formulae! You provided: {args.formulae}")
+        sys.exit(1)
 
     parser = LTLfParser()
 
