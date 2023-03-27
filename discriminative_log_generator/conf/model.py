@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import re
+from pathlib import Path
 from typing import List, Dict, Union, Tuple, Set, Callable
 import numpy.random
 import parse
@@ -104,6 +105,7 @@ class PartitionSettings:
 class LogGeneratorSettings:
     activity_set: Set[Activity]
     partition_settings: List[PartitionSettings]
+    output_path: Path
 
     @property
     def activities(self):
@@ -127,7 +129,7 @@ class LogGeneratorSettings:
 
         partitions = [PartitionSettings.from_dict(p) for p in block['partitions']]
 
-        return LogGeneratorSettings(set(activity_set), partitions)
+        return LogGeneratorSettings(set(activity_set), partitions, Path(block['output_file']))
 
 
 if __name__ == '__main__':
