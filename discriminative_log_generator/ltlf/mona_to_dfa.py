@@ -38,6 +38,7 @@ def patch_ltlf2dfa():
             )
 
     MonaProgram.mona_program = mona_program
+    return True
 
 
 def patch_automatalib():
@@ -64,7 +65,7 @@ def patch_automatalib():
         return result #''.join(result)
 
     DFA.random_word = random_word
-
+    return True
 
 def mona_to_automatalib(mona: MONAOutput):
     def decode_guard(guard):
@@ -101,9 +102,10 @@ def mona_to_automatalib(mona: MONAOutput):
 def partition_formulae(formulae: List[str]):
     partitioning_formulae = []
 
-    for idx, f in enumerate(formulae):
-        to_neg = [_f for _f in formulae if f != _f]
-        partitioning_formulae.append(f"{f} & ~({' & '.join(tn for tn in to_neg)})")
+    for i in range(len(formulae)):
+        pos = formulae[i]
+        neg = formulae[:i] + formulae[i+1:]
+        partitioning_formulae.append(f"{pos} & ~({' & '.join(n for n in neg)})")
 
     return partitioning_formulae
 
@@ -130,22 +132,3 @@ def generate_partition(dfa, n, length, activities):
     return words
 
 
-if __name__ == '__main__':
-    parser = LTLfParser()
-
-    pformulae = [parser(x) for x in partition_formulae(sys.argv[1:])]
-
-    # Adding Declare assumption to MonaProgram by default
-    patch_ltlf2dfa()
-
-    # Do not join state names when returning random word
-    patch_automatalib()
-
-    dfas = [ltlf_to_dfa(formula) for formula in pformulae]
-
-    for idx, dfa in enumerate(dfas):
-        print("Random words for formula", pformulae[idx])
-        random_words = generate_partition(dfa, 10, 15, {"A", "B", "C", "D", "E", "F", "G"})
-
-        for w in random_words:
-            print(w)
