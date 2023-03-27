@@ -120,20 +120,6 @@ def mona_to_automatalib(mona: MONAOutput):
         allow_partial=True
     )
 
-
-def partition_formulae(formulae: List[Formula]):
-    partitioning_formulae = []
-
-    for i in range(len(formulae)):
-        pos = formulae[i]
-        neg = formulae[:i] + formulae[i+1:]
-        if len(neg) < 2:
-            neg.append(LTLfTrue())
-        partitioning_formulae.append(LTLfAnd([pos, LTLfNot(LTLfAnd(neg))]))
-
-    return partitioning_formulae
-
-
 def ltlf_to_dfa(ltlf):
     mona_dfa = parse_mona_output(to_dfa(ltlf, mona_dfa_out=True))
     dfa = mona_to_automatalib(mona_dfa)
@@ -155,6 +141,19 @@ def accept_one_reject_all_others(to_accept, to_reject):
     DFA that accepts models of `to_accept` and is rejected by all formulae in `to_reject`
     """
     return LTLfAnd([to_accept] + [LTLfNot(x) for x in to_reject])
+
+
+def partition_formulae(formulae: List[Formula]):
+    partitioning_formulae = []
+
+    for i in range(len(formulae)):
+        pos = formulae[i]
+
+        # Skip formulae[i]
+        neg = formulae[:i] + formulae[i+1:]
+        partitioning_formulae.append(accept_one_reject_all_others(pos, neg))
+
+    return partitioning_formulae
 
 
 def generate_random_trace(dfa, length, available_activities):
