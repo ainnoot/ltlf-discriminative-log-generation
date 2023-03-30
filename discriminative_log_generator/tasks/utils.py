@@ -5,13 +5,13 @@ from discriminative_log_generator.tasks.exceptions import *
 
 
 def validate_activity(activity_str):
-    if re.fullmatch(r'[a-z][a-z_0-9]*', activity_str) is None:
+    if re.fullmatch(r"[a-z][a-z_0-9]*", activity_str) is None:
         raise InvalidActivity(activity_str)
 
 
 def merge_specifications(block):
-    ltlf_formulae = block['ltlf'] if 'ltlf' in block.keys() else []
-    decl_constraints = block['declare'] if 'declare' in block.keys() else []
+    ltlf_formulae = block["ltlf"] if "ltlf" in block.keys() else []
+    decl_constraints = block["declare"] if "declare" in block.keys() else []
     formulae = []
     p = LTLfParser()
 
@@ -35,16 +35,20 @@ def parse_declare_constraint(decl):
     params = parse.parse(mask, decl).named
 
     from discriminative_log_generator.tasks import declare_constraints
+
     available_declare_templates = dir(declare_constraints)
 
-    if params['template'].lower() not in available_declare_templates:
-        raise UnknownDeclareConstraint(params['template'])
+    if params["template"].lower() not in available_declare_templates:
+        raise UnknownDeclareConstraint(params["template"])
 
-    return getattr(declare_constraints, params['template'].lower())(*(params['activities'].split(',')))
+    return getattr(declare_constraints, params["template"].lower())(
+        *(params["activities"].split(","))
+    )
 
 
 def np_random_closure(method, args=dict(), seed=77):
     from numpy.random import default_rng
+
     g = default_rng(seed=seed)
     if method not in dir(g):
         raise Exception(f"Unknown numpy.random function {method}")
@@ -53,7 +57,9 @@ def np_random_closure(method, args=dict(), seed=77):
     try:
         f(**args)
     except Exception as e:
-        raise Exception(f"Something wrong when calling {method} with parameters {args} - check numpy documentation.")
+        raise Exception(
+            f"Something wrong when calling {method} with parameters {args} - check numpy documentation."
+        )
 
     def rng_closure():
         return f(**args)

@@ -1,10 +1,7 @@
 #! ./venv/bin/python
 
 from discriminative_log_generator.tasks import build_task_from_yaml
-from discriminative_log_generator.export import event_log_dataframe_from_dict_of_traces
-from discriminative_log_generator.export import write_to, event_log_dataframe_from_dict_of_traces
 from argparse import ArgumentParser
-import pandas as pd
 
 if __name__ == '__main__':
     p = ArgumentParser()

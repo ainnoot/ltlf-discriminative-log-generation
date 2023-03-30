@@ -22,7 +22,13 @@ def patch_ltlf2dfa():
                 vars = ", ".join(self.vars + ["__placeholder__"])
 
                 formula_mona = self.formula.to_mona()
-                unwrap_formula = "(" + formula_mona[1:-1] + ") & (" + compute_declare_assumption(self.vars + ['__placeholder__'])[:-1] + ")"
+                unwrap_formula = (
+                    "("
+                    + formula_mona[1:-1]
+                    + ") & ("
+                    + compute_declare_assumption(self.vars + ["__placeholder__"])[:-1]
+                    + ")"
+                )
 
                 return "{};\n{};\nvar2 {};\n{};\n".format(
                     top_comment,
@@ -38,7 +44,7 @@ def patch_ltlf2dfa():
 
         MonaProgram.mona_program = mona_program
     except Exception as e:
-        raise PatchException('ltlf2dfa', traceback.format_exc())
+        raise PatchException("ltlf2dfa", traceback.format_exc())
 
     return True
 
@@ -49,6 +55,7 @@ def patch_automatalib():
     from automata.fa.dfa import DFA
 
     try:
+
         def random_word(self, k, *, seed=None):
             self._populate_count_cache_up_to_len(k)
             state = self.initial_state
@@ -59,8 +66,10 @@ def patch_automatalib():
             rng = Random(seed)
             for remaining in range(k, 0, -1):
                 total = self._count_cache[remaining][state]
-                choice = rng.randint(0, total-1)
-                for symbol, next_state in self.transitions[state].items():  # pragma: no branch
+                choice = rng.randint(0, total - 1)
+                for symbol, next_state in self.transitions[
+                    state
+                ].items():  # pragma: no branch
                     next_state_count = self._count_cache[remaining - 1][next_state]
                     if choice < next_state_count:
                         result.append(symbol)
@@ -69,11 +78,11 @@ def patch_automatalib():
                     choice -= next_state_count
 
             assert state in self.final_states
-            return result #''.join(result)
+            return result  #''.join(result)
 
         DFA.random_word = random_word
     except Exception as e:
-        raise PatchException('automata-lib', traceback.format_exc())
+        raise PatchException("automata-lib", traceback.format_exc())
 
     return True
 
