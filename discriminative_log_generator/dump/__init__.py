@@ -1,1 +1,0 @@
-from .str_to_df import trace_to_dataframe
