@@ -1,14 +1,14 @@
 ## Usage
 
 ```commandline
-usage: lg.py [-h] -f FORMULAE [FORMULAE ...] -l LENGTH -n NUM_TRACES
+usage: lg.py [-h] configuration output_log_path
+
+positional arguments:
+  configuration    Path to YAML configuration file.
+  output_log_path  Log output file. Extension defines the format.
 
 options:
-  -h, --help            show this help message and exit
-  -f FORMULAE [FORMULAE ...], --formulae FORMULAE [FORMULAE ...]
-                        LTLf formulae that will induce the log partitions.
-  -l LENGTH, --length LENGTH
-                        Length of the traces to generate.
-  -n NUM_TRACES, --num-traces NUM_TRACES
-                        How many traces will be generated (per partition).
+  -h, --help       show this help message and exit
 ```
+### Configuration file
+TODO.
