@@ -1,3 +1,4 @@
+import sys
 from dataclasses import dataclass
 from typing import Callable
 
@@ -11,6 +12,7 @@ from discriminative_log_generator.tasks.utils import np_random_closure, merge_sp
 from math import floor
 from ltlf2dfa.parser.ltlf import LTLfParser
 from ltlf2dfa.base import Formula
+from loguru import logger
 
 
 @dataclass(frozen=True)
@@ -25,11 +27,13 @@ class GenerateLogTask:
     def __init__(self):
         self.activities = set()
         self.partitions = list()
+        self.log = None
 
     def set_activities(self, activities):
         for a in activities:
             validate_activity(a)
             self.activities.add(a)
+            logger.info(f"Added activity {a}")
         return self
 
     def add_partition(self, p):
@@ -41,6 +45,7 @@ class GenerateLogTask:
             raise Exception("Number of traces to generate must be a positive number.")
 
         self.partitions.append(p)
+        logger.info(f"Added partition {p}")
 
         return self
 
@@ -53,16 +58,29 @@ class GenerateLogTask:
         # Build partitioning formulae for all partitions
         all_formulae = [p.specification for p in self.partitions]
         for idx, partition in enumerate(self.partitions):
-            print(f"Generating log for partition {partition}")
+            logger.info(f"Generating strings for partition {partition}")
             partition_formula = separation_formula(partition.specification, all_formulae[:idx] + all_formulae[idx + 1:])
-            dfa = ltlf_to_dfa(partition_formula)
 
-            log_partitions[partition.label] = [generate_random_trace(dfa, 1 + floor(partition.trace_length_distribution()), self.activities) for _ in range(partition.num_traces)]
+            try:
+                dfa = ltlf_to_dfa(partition_formula)
+                log_partitions[partition.label] = [generate_random_trace(dfa, 1 + floor(partition.trace_length_distribution()), self.activities) for _ in range(partition.num_traces)]
+
+            except Exception as e:
+                print(f"The following LTLf formula: {partition_formula}, obtained as the separation formula for partition {partition.label}, yields an empty automaton.")
+                sys.exit(0)
+
+        self.log = log_partitions
+
+    def write(self, path):
+        from discriminative_log_generator.export import write_to, event_log_dataframe_from_dict_of_traces
+        log = event_log_dataframe_from_dict_of_traces(self.log)
+        write_to(log, path)
 
         self.activities = set()
         self.partitions = list()
+        self.log = None
 
-        return log_partitions
+        logger.info(f"Writing to {path}")
 
 
 def build_task_from_yaml(path, seed=77):

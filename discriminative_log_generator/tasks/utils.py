@@ -12,7 +12,7 @@ def validate_activity(activity_str):
 def merge_specifications(block):
     ltlf_formulae = block['ltlf'] if 'ltlf' in block.keys() else []
     decl_constraints = block['declare'] if 'declare' in block.keys() else []
-    formulae = [LTLfTrue()]
+    formulae = []
     p = LTLfParser()
 
     for ltlf_f in ltlf_formulae:
@@ -44,8 +44,8 @@ def parse_declare_constraint(decl):
 
 
 def np_random_closure(method, args=dict(), seed=77):
-    from numpy.random import PCG64
-    g = PCG64(seed=seed)
+    from numpy.random import default_rng
+    g = default_rng(seed=seed)
     if method not in dir(g):
         raise Exception(f"Unknown numpy.random function {method}")
 
@@ -55,4 +55,7 @@ def np_random_closure(method, args=dict(), seed=77):
     except Exception as e:
         raise Exception(f"Something wrong when calling {method} with parameters {args} - check numpy documentation.")
 
-    return lambda: f(**args)
+    def rng_closure():
+        return f(**args)
+
+    return rng_closure

@@ -36,6 +36,9 @@ def mona_to_automatalib(mona: MONAOutput):
                 if variable_index is not None:
                     transitions[source_state][free_variables[variable_index]] = dest_state
 
+    if len(mona.accepting_states) == 0:
+        raise Exception(f"The MONA program is unsatisfiable.")
+
     return DFA(
         states=transitions.keys(),
         input_symbols=free_variables,
