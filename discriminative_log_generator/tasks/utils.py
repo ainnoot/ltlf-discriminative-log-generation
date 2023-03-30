@@ -43,12 +43,13 @@ def parse_declare_constraint(decl):
     return getattr(declare_constraints, params['template'].lower())(*(params['activities'].split(',')))
 
 
-def np_random_closure(method, args=dict()):
-    import numpy.random as nprng
-    if method not in dir(nprng):
+def np_random_closure(method, args=dict(), seed=77):
+    from numpy.random import PCG64
+    g = PCG64(seed=seed)
+    if method not in dir(g):
         raise Exception(f"Unknown numpy.random function {method}")
 
-    f = getattr(nprng, method)
+    f = getattr(g, method)
     try:
         f(**args)
     except Exception as e:

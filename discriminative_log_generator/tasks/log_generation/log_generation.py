@@ -65,7 +65,7 @@ class GenerateLogTask:
         return log_partitions
 
 
-def build_task_from_yaml(path):
+def build_task_from_yaml(path, seed=77):
     def parse_activities(block):
         activities = []
         for activity in block:
@@ -84,7 +84,7 @@ def build_task_from_yaml(path):
         from discriminative_log_generator.tasks.utils import np_random_closure
         assert 'numpy.random' in block.keys()
         assert 'kwargs' in block.keys()
-        return np_random_closure(block['numpy.random'], block['kwargs'])
+        return np_random_closure(block['numpy.random'], block['kwargs'], seed=seed)
 
     def parse_partition(block):
         keys = block.keys()
