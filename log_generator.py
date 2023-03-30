@@ -14,6 +14,6 @@ if __name__ == "__main__":
     p.add_argument("-s", "--seed", type=int, default=77)
     args = p.parse_args()
 
-    lgt = GenerateLogTask.from_yaml(args.configuration, seed=args.seed)
-    lgt.generate_log()
-    lgt.write(args.output_log_path)
+    GenerateLogTask.from_yaml(args.configuration, seed=args.seed)\
+        .generate_log()\
+        .write(args.output_log_path)

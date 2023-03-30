@@ -40,7 +40,14 @@ class GenerateLogTask:
         self.partitions = list()
         self.log = None
 
+    def __reset__(self):
+        self.activities = set()
+        self.partitions = list()
+        self.log = None
+
     def set_activities(self, activities):
+        self.__reset__()
+
         for a in activities:
             validate_activity(a)
             self.activities.add(a)
@@ -99,8 +106,11 @@ class GenerateLogTask:
                 sys.exit(0)
 
         self.log = log_partitions
+        return self
 
     def write(self, path):
+        assert self.log is not None
+
         from discriminative_log_generator.export import (
             write_to,
             event_log_dataframe_from_dict_of_traces,
@@ -108,10 +118,6 @@ class GenerateLogTask:
 
         log = event_log_dataframe_from_dict_of_traces(self.log)
         write_to(log, path)
-
-        self.activities = set()
-        self.partitions = list()
-        self.log = None
 
         logger.info(f"Writing to {path}")
 

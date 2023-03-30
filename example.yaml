@@ -13,7 +13,7 @@ partitions:
     trace_length:
       numpy.random: normal
       kwargs:
-        loc: 5.0
+        loc: 30.0
         scale: 1.0
 
     num_traces: 10
@@ -26,7 +26,7 @@ partitions:
     trace_length:
       numpy.random: normal
       kwargs:
-        loc: 5.0
+        loc: 10.0
         scale: 1.0
 
     num_traces: 10
@@ -41,7 +41,7 @@ partitions:
     trace_length:
       numpy.random: normal
       kwargs:
-        loc: 3.0
+        loc: 20.0
         scale: 1.0
 
     num_traces: 10
