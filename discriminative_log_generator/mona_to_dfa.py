@@ -55,6 +55,18 @@ def mona_to_automatalib(mona: MONAOutput):
 
 
 def ltlf_to_dfa(ltlf):
+    import ltlf2dfa
+    import automata
+
+    if not ltlf2dfa.__patched__:
+        raise Exception(
+            "Missing patch. Did you import `discriminative_log_generator` package?"
+        )
+    if not automata.__patched__:
+        raise Exception(
+            "Missing patch. Did you import `discriminative_log_generator` package?"
+        )
+
     mona_dfa = parse_mona_output(to_dfa(ltlf, mona_dfa_out=True))
     dfa = mona_to_automatalib(mona_dfa)
 

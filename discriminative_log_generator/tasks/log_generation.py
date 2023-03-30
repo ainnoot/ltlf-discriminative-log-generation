@@ -4,22 +4,18 @@ from typing import Callable
 
 import yaml
 
-from discriminative_log_generator.dfa_translation import (
-    ltlf_to_dfa,
+from discriminative_log_generator import (
     generate_random_trace,
     separation_formula,
+    ltlf_to_dfa,
 )
-from discriminative_log_generator.export.trace_to_dataframe import (
-    event_log_dataframe_from_dict_of_traces,
-)
-import pm4py
+
 from discriminative_log_generator.tasks.utils import validate_activity
 from discriminative_log_generator.tasks.utils import (
-    np_random_closure,
     merge_specifications,
 )
+
 from math import floor
-from ltlf2dfa.parser.ltlf import LTLfParser
 from ltlf2dfa.base import Formula
 from loguru import logger
 
@@ -31,25 +27,32 @@ class Partition:
     num_traces: int
     label: str
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f"Partition[{self.label}, {self.specification}]"
+
 
 class GenerateLogTask:
     def __init__(self):
         self.activities = set()
         self.partitions = list()
         self.log = None
-        self.ignore_empty_dfa = False
 
     def set_activities(self, activities):
         for a in activities:
             validate_activity(a)
             self.activities.add(a)
-            logger.info(f"Added activity {a}")
+
+        logger.info(f"Activities: {self.activities}")
         return self
 
     def add_partition(self, p):
         unknown_activities = set(p.specification.find_labels()).difference(
             self.activities
         )
+
         if len(unknown_activities) > 0:
             raise Exception(f"Unknown activities: {unknown_activities}.")
 
@@ -87,15 +90,13 @@ class GenerateLogTask:
                 ]
 
             except Exception as e:
-                if not self.ignore_empty_dfa:
-                    logger.error(
-                        f"The following LTLf formula: {partition_formula}, obtained as the separation formula for partition {partition.label}, yields an empty automaton. Halting since {self.ignore_empty_dfa=}"
-                    )
-                    sys.exit(0)
-                else:
-                    logger.error(
-                        f"The following LTLf formula: {partition_formula}, obtained as the separation formula for partition {partition.label}, yields an empty automaton. Halting since {self.ignore_empty_dfa=}"
-                    )
+                import traceback
+
+                traceback.print_exc()
+                logger.error(
+                    f"The following LTLf formula: {partition_formula}, obtained as the separation formula for partition {partition.label}, yields an empty automaton. Halting since {self.ignore_empty_dfa=}"
+                )
+                sys.exit(0)
 
         self.log = log_partitions
 
@@ -114,56 +115,56 @@ class GenerateLogTask:
 
         logger.info(f"Writing to {path}")
 
+    @staticmethod
+    def from_yaml(path, seed=77):
+        def parse_activities(block):
+            activities = []
+            for activity in block:
+                if type(activity) == str:
+                    activities.append(activity)
+                elif type(activity) == dict:
+                    assert "prefix" in activity.keys()
+                    assert "range" in activity.keys()
+                    lb, ub = activity["range"]
+                    activities.extend(
+                        [f"{activity['prefix']}_{i}" for i in range(lb, ub + 1)]
+                    )
+                else:
+                    raise Exception()
+            return activities
 
-def build_task_from_yaml(path, seed=77):
-    def parse_activities(block):
-        activities = []
-        for activity in block:
-            if type(activity) == str:
-                activities.append(activity)
-            elif type(activity) == dict:
-                assert "prefix" in activity.keys()
-                assert "range" in activity.keys()
-                lb, ub = activity["range"]
-                activities.extend(
-                    [f"{activity['prefix']}_{i}" for i in range(lb, ub + 1)]
-                )
-            else:
-                raise Exception()
-        return activities
+        def parse_length_distribution(block):
+            from discriminative_log_generator.tasks.utils import np_random_closure
 
-    def parse_length_distribution(block):
-        from discriminative_log_generator.tasks.utils import np_random_closure
+            assert "numpy.random" in block.keys()
+            assert "kwargs" in block.keys()
+            return np_random_closure(block["numpy.random"], block["kwargs"], seed=seed)
 
-        assert "numpy.random" in block.keys()
-        assert "kwargs" in block.keys()
-        return np_random_closure(block["numpy.random"], block["kwargs"], seed=seed)
+        def parse_partition(block):
+            keys = block.keys()
+            assert "formula" in keys
+            assert "num_traces" in keys
+            assert "trace_length" in keys
+            assert "label" in keys
 
-    def parse_partition(block):
-        keys = block.keys()
-        assert "formula" in keys
-        assert "num_traces" in keys
-        assert "trace_length" in keys
-        assert "label" in keys
+            formula = merge_specifications(block["formula"])
+            num_traces = block["num_traces"]
+            rng = parse_length_distribution(block["trace_length"])
+            label = block["label"]
 
-        formula = merge_specifications(block["formula"])
-        num_traces = block["num_traces"]
-        rng = parse_length_distribution(block["trace_length"])
-        label = block["label"]
+            return Partition(formula, rng, num_traces, label)
 
-        return Partition(formula, rng, num_traces, label)
+        with open(path, "r") as f:
+            data = yaml.safe_load(f)
 
-    with open(path, "r") as f:
-        data = yaml.safe_load(f)
+        assert "activities" in data.keys()
+        activities = parse_activities(data["activities"])
 
-    assert "activities" in data.keys()
-    activities = parse_activities(data["activities"])
+        task = GenerateLogTask()
+        task.set_activities(activities)
 
-    task = GenerateLogTask()
-    task.set_activities(activities)
+        for partition in data["partitions"]:
+            p = parse_partition(partition)
+            task.add_partition(p)
 
-    for partition in data["partitions"]:
-        p = parse_partition(partition)
-        task.add_partition(p)
-
-    return task
+        return task

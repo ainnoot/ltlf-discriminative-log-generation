@@ -34,7 +34,7 @@ partitions:
 
   - formula:
       declare:
-        - chainresponse(a_1,a_2)
+        - chainresponse(a_1,a_3)
 
     label: pos_3
 
