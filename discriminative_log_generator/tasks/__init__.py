@@ -1,1 +1,1 @@
-from discriminative_log_generator.tasks.log_generation import GenerateLogTask, Partition
+from discriminative_log_generator.tasks.log_generation import GenerateLogTask

@@ -1,4 +1,6 @@
 #! ./venv/bin/python
+import pandas as pd
+from pm4py.objects.log.obj import EventLog, EventStream
 
 from discriminative_log_generator.tasks import GenerateLogTask
 from argparse import ArgumentParser
@@ -11,9 +13,9 @@ if __name__ == "__main__":
         type=str,
         help="Log output file. Extension defines the format.",
     )
-    p.add_argument("-s", "--seed", type=int, default=77)
     args = p.parse_args()
 
-    GenerateLogTask.from_yaml(args.configuration, seed=args.seed)\
-        .generate_log()\
-        .write(args.output_log_path)
+    task = GenerateLogTask.from_yaml(args.configuration)
+    log = task.generate_log()
+
+    task.write(args.output_log_path)
