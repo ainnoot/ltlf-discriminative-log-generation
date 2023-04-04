@@ -1,7 +1,6 @@
 from collections import defaultdict
 
 import yaml
-from ltlf2dfa.base import Formula
 from ltlf2dfa.ltlf import LTLfAnd
 
 from discriminative_log_generator.parse import parse_partition, parse_model, parse_activity_block

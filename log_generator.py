@@ -2,7 +2,7 @@
 import pandas as pd
 from pm4py.objects.log.obj import EventLog, EventStream
 
-from discriminative_log_generator.tasks import GenerateLogTask
+from discriminative_log_generator.generator import GenerateLogTask
 from argparse import ArgumentParser
 
 if __name__ == "__main__":
@@ -11,7 +11,7 @@ if __name__ == "__main__":
     p.add_argument(
         "output_log_path",
         type=str,
-        help="Log output file. Extension defines the format.",
+        help="Log output file. Extensions - lp, txt, xes, csv - defines the format.",
     )
     args = p.parse_args()
 
